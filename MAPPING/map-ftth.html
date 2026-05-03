@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map FTTH Monitoring</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <style>
+        body { margin: 0; }
+        #map { height: 100vh; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    var map = L.map('map', { maxZoom: 22 })
+        .setView([-0.6728, 100.9291], 18);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 22
+    }).addTo(map);
+
+    var markers = [];
+
+    function loadData() {
+
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        fetch('customers.json')
+        .then(res => res.json())
+        .then(data => {
+
+            var zoom = map.getZoom();
+            var size = zoom >= 20 ? 40 : zoom >= 18 ? 30 : 20;
+
+            data.forEach(function(cust) {
+
+                // 🔵 ICON NETRAL (TIDAK ADA WARNA STATUS)
+                var wifiIcon = L.divIcon({
+                    html: `<div style="
+                        width:${size}px;
+                        height:${size}px;
+                        border-radius:50%;
+                        border:3px solid #555;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        background:white;
+                        color:#555;
+                        font-size:${size - 10}px;
+                        box-shadow:0 0 5px rgba(0,0,0,0.3);
+                    ">📶</div>`,
+                    className: ''
+                });
+
+                var marker = L.marker([cust.lat, cust.lon], {
+                    icon: wifiIcon
+                }).addTo(map);
+
+                // 🔥 GANTI STATUS → CTTN
+                marker.bindPopup(
+                    "<b>" + cust.nama + "</b><br>" +
+                    "Catatan: " + (cust.cttn || "-")
+                );
+
+                markers.push(marker);
+            });
+
+        });
+    }
+
+    loadData();
+    map.on('zoomend', loadData);
+
+</script>
+
+</body>
+</html>
